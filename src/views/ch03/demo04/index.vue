@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Color, DEG2RAD, Euler, Matrix4, Program, Shader, type Uniforms } from "@source/index";
+import { Color, DEG2RAD, Euler, Matrix4, Program, Shader, Vector3, type Uniforms } from "@source/index";
 import { CanvasEventProxy, convertPositionToWebGLPosition, EventType } from "@source/render/CanvasEventProxy";
 import { VertexArray } from "@source/render/VertexArray";
 import { ref, onMounted, onUnmounted, reactive } from "vue";
@@ -35,11 +35,8 @@ onUnmounted(() => {
     canvasEventProxy?.destroy();
 });
 
-const points = [
-    0.0, 0.5,
-    -0.5, -0.5,
-    0.5, -0.5
-] as number[];
+const points = getCubePoints(new Vector3(0, 0, 0), new Vector3(0.25, 0.25, 0.25));
+
 
 function initLightGL(gl: WebGL2RenderingContext) {
     // gl.clearColor(1, 1, 0, 1.0);
@@ -66,7 +63,7 @@ function initLightGL(gl: WebGL2RenderingContext) {
 
     vertexArray.adddAttribute({
         name: "a_position",
-        size: 2,
+        size: 3,
         data: new Float32Array(points),
     })
 
@@ -91,11 +88,11 @@ function initCanvasEventProxy(canvas: HTMLCanvasElement) {
 
 function initShaders(gl: WebGL2RenderingContext) {
     let vs = `#version 300 es
-    in vec2 a_position;
+    in vec3 a_position;
     uniform mat4 uModelMatrix;
 
     void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
+        gl_Position = vec4(a_position, 1.0);
         gl_Position = uModelMatrix * gl_Position;
         // gl_PointSize = 10.0;
     }
@@ -119,13 +116,47 @@ function render(gl: WebGL2RenderingContext, program: Program, uniforms: Uniforms
     gl.clear(gl.COLOR_BUFFER_BIT);
     color.offsetHSL(0.005, 0, 0);
     program.setUniforms(uniforms);
-    vertexArray.updateAttributeData("a_position", new Float32Array(points));
-    let num = points.length / 2;
-    gl.drawArrays(gl.TRIANGLES, 0, num);
+    // vertexArray.updateAttributeData("a_position", new Float32Array(points));
+    let num = points.length / 3;
+    gl.drawArrays(gl.LINES, 0, num);
 
     requestAnimationFrame(() => {
         render(gl, program, uniforms, vertexArray);
     });
+}
+
+
+function getCubePoints(center: Vector3, size: Vector3) {
+    let points = [];
+    for (let i = 0; i < 8; i++) {
+        let x = i & 1 ? size.x / 2 : -size.x / 2;
+        let y = i & 2 ? size.y / 2 : -size.y / 2;
+        let z = i & 4 ? size.z / 2 : -size.z / 2;
+        points.push(new Vector3(x + center.x, y + center.y, z + center.z));
+    }
+
+    // 按棱柱顺序
+    let indexs = [
+        0, 1,
+        1, 3,
+        3, 2,
+        2, 0,
+
+        4, 5,
+        5, 7,
+        7, 6,
+        6, 4,
+
+        0, 4,
+        1, 5,
+        2, 6,
+        3, 7
+    ]
+    let res: number[] = []
+     indexs.map((index) => {
+        res.push(...points[index].toArray())
+    })
+    return res;
 }
 
 </script>

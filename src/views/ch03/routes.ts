@@ -15,5 +15,9 @@ export const ch03 = {
       name: '03 矩阵 + 平移',
       comp: defineAsyncComponent(() => import('./demo03/index.vue')),
     },
+    {
+      name: '04 旋转的立方体',
+      comp: defineAsyncComponent(() => import('./demo04/index.vue')),
+    },
   ],
 };

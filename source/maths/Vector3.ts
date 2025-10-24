@@ -620,7 +620,7 @@ export class Vector3 {
     return this;
   }
 
-  toArray(array: number[], offset: number = 0) {
+  toArray(array: number[] = [], offset: number = 0) {
     array[offset] = this.x;
     array[offset + 1] = this.y;
     array[offset + 2] = this.z;

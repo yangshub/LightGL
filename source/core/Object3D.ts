@@ -1,11 +1,11 @@
-import EventEmitter from "eventemitter3";
-import { generateUUID } from "../utils/MathUtils";
-import { Vector3 } from "../maths/Vector3";
-import { Euler } from "../maths/Euler";
-import { Quaternion } from "../maths/Quaternion";
-import { watchObj } from "../utils/watchObj";
-import { Matrix4 } from "../maths/Matrix4";
-import { Matrix3 } from "../maths/Matrix3";
+import EventEmitter from 'eventemitter3';
+import { generateUUID } from '../utils/MathUtils';
+import { Vector3 } from '../maths/Vector3';
+import { Euler } from '../maths/Euler';
+import { Quaternion } from '../maths/Quaternion';
+import { watchObj } from '../utils/watchObj';
+import { Matrix4 } from '../maths/Matrix4';
+import { Matrix3 } from '../maths/Matrix3';
 
 let _object3DId = 0;
 const _q1 = new Quaternion();
@@ -17,7 +17,7 @@ const _m1 = new Matrix4();
 const _target = new Vector3();
 
 enum Object3DType {
-  Object3D = "Object3D",
+  Object3D = 'Object3D',
 }
 
 export class Object3D extends EventEmitter {
@@ -40,11 +40,11 @@ export class Object3D extends EventEmitter {
   matrixWorldAutoUpdate: boolean;
   matrixWorldNeedsUpdate: boolean;
   visible: boolean;
-  constructor(options: { name?: string }) {
+  constructor(options?: { name?: string }) {
     super();
     this.id = _object3DId++;
     this.uuid = generateUUID();
-    this.name = options?.name || "";
+    this.name = options?.name || '';
     this.up = Object3D.DEFAULT_UP.clone();
     this.position = new Vector3();
     this.scale = new Vector3(1, 1, 1);
@@ -179,6 +179,78 @@ export class Object3D extends EventEmitter {
 
         child.updateWorldMatrix(false, true);
       }
+    }
+  }
+
+  add(object: Object3D) {}
+
+  clone() {
+    return new Object3D().copy(this, true);
+  }
+
+  copy(source: Object3D, recursive: boolean) {
+    this.name = source.name;
+
+    this.up.copy(source.up);
+
+    this.position.copy(source.position);
+    this.rotation.order = source.rotation.order;
+    this.quaternion.copy(source.quaternion);
+    this.scale.copy(source.scale);
+
+    this.matrix.copy(source.matrix);
+    this.matrixWorld.copy(source.matrixWorld);
+
+    this.matrixAutoUpdate = source.matrixAutoUpdate;
+
+    this.matrixWorldAutoUpdate = source.matrixWorldAutoUpdate;
+    this.matrixWorldNeedsUpdate = source.matrixWorldNeedsUpdate;
+
+    this.visible = source.visible;
+
+    if (recursive === true) {
+      for (let i = 0; i < source.children.length; i++) {
+        const child = source.children[i];
+        this.add(child.clone());
+      }
+    }
+
+    return this;
+  }
+
+  getWorldDirection(target: Vector3) {
+    this.updateWorldMatrix(true, false);
+
+    const e = this.matrixWorld.elements;
+
+    return target.set(e[8], e[9], e[10]).normalize();
+  }
+
+  updateMatrixWorld(force: boolean) {
+    if (this.matrixAutoUpdate) this.updateMatrix();
+
+    if (this.matrixWorldNeedsUpdate || force) {
+      if (this.matrixWorldAutoUpdate === true) {
+        if (this.parent === null) {
+          this.matrixWorld.copy(this.matrix);
+        } else {
+          this.matrixWorld.multiplyMatrices(this.parent.matrixWorld, this.matrix);
+        }
+      }
+
+      this.matrixWorldNeedsUpdate = false;
+
+      force = true;
+    }
+
+    // make sure descendants are updated if required
+
+    const children = this.children;
+
+    for (let i = 0, l = children.length; i < l; i++) {
+      const child = children[i];
+
+      child.updateMatrixWorld(force);
     }
   }
 
